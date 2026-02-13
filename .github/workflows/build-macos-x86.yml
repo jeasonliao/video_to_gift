@@ -1,0 +1,54 @@
+name: Build macOS (x86_64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-macos-x86:
+    runs-on: macos-12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Homebrew ffmpeg (Intel runner will provide x86_64 binary)
+        run: |
+          echo "Installing ffmpeg via Homebrew"
+          brew update || true
+          brew install ffmpeg || true
+          mkdir -p ffmpeg_binaries/macos
+          cp "$(which ffmpeg)" ffmpeg_binaries/macos/ffmpeg || true
+          if command -v ffprobe >/dev/null 2>&1; then cp "$(which ffprobe)" ffmpeg_binaries/macos/ffprobe || true; fi
+          chmod +x ffmpeg_binaries/macos/* || true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconfirm --windowed --name video_to_gif \
+            --add-data "ffmpeg_binaries/macos:ffmpeg_binaries" video_to_gif_gui.py
+
+      - name: Package output
+        run: |
+          mkdir -p release
+          if [ -d dist/video_to_gif.app ]; then
+            ditto -c -k --sequesterRsrc --keepParent dist/video_to_gif.app release/video_to_gif_mac_x86.zip
+          else
+            zip -r release/video_to_gif_mac_x86.zip dist/video_to_gif
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video_to_gif-macos-x86_64
+          path: release/video_to_gif_mac_x86.zip
