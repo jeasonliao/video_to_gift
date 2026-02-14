@@ -55,6 +55,11 @@ fi
 
 # Run PyInstaller under Rosetta (x86_64)
 echo "Running PyInstaller (x86_64)..."
+# Force deployment target to macOS 10.15 so the produced binary is compatible with
+# Catalina (10.15). Also export SDK/min version for extension builds.
+export MACOSX_DEPLOYMENT_TARGET="10.15"
+export CFLAGS="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+
 arch -x86_64 python -m PyInstaller --noconfirm --windowed --name video_to_gif \
   --add-data "ffmpeg_binaries/macos:ffmpeg_binaries" video_to_gif_gui.py
 

@@ -34,7 +34,14 @@ jobs:
           pip install pyinstaller pillow
 
       - name: Build with PyInstaller
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '10.15'
         run: |
+          # Ensure wheel builds target macOS 10.15 for Catalina compatibility
+          export MACOSX_DEPLOYMENT_TARGET=10.15
+          export CFLAGS="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow
           pyinstaller --noconfirm --windowed --name video_to_gif \
             --add-data "ffmpeg_binaries/macos:ffmpeg_binaries" video_to_gif_gui.py
 
